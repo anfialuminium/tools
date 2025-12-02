@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מחולל הצעות מחיר - אנפי</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f3f4f6;
+            --paper-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* App Layout */
+        .app-header {
+            background: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .app-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .action-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Editor Pane */
+        .editor-pane {
+            width: 400px;
+            background: white;
+            border-left: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: -4px 0 6px -1px rgba(0, 0, 0, 0.05);
+            z-index: 5;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .form-input, .form-textarea {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .products-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .product-item {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .remove-product {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            color: #ef4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .add-btn {
+            background-color: white;
+            border: 1px dashed var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            background-color: #eff6ff;
+        }
+
+        /* Preview Pane */
+        .preview-pane {
+            flex: 1;
+            background-color: #e5e7eb;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Allow paper to grow naturally */
+        }
+
+        /* The Quote Paper Design */
+        .paper {
+            background: white;
+            width: 210mm; /* A4 width */
+            min-height: 297mm; /* A4 height */
+            padding: 15mm; /* Reduced margins */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: relative;
+            color: #000;
+            height: auto; /* Allow height to grow */
+            margin-bottom: 2rem; /* Space at bottom */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        /* Quote Internal Styles (Mirrored from original) */
+        .quote-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem; /* Reduced */
+        }
+
+        .quote-logo {
+            width: 120px; /* Slightly smaller */
+            height: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .quote-logo img {
+            max-width: 100%;
+        }
+
+        .quote-title {
+            font-size: 1.8rem; /* Slightly smaller */
+            font-weight: bold;
+            color: #333;
+        }
+
+        .quote-section {
+            margin-bottom: 1rem; /* Reduced */
+        }
+
+        .quote-subtitle {
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.25rem;
+            margin-top: 1.25rem; /* Reduced */
+            margin-bottom: 0.5rem; /* Reduced */
+            color: #333;
+        }
+
+        .quote-text {
+            line-height: 1.4; /* Reduced line height */
+            font-size: 0.95rem; /* Slightly smaller font */
+        }
+
+        .quote-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .quote-list li {
+            margin-bottom: 0.25rem; /* Reduced */
+            padding-right: 1rem;
+            position: relative;
+        }
+
+        .quote-list li::before {
+            content: "•";
+            position: absolute;
+            right: 0;
+            color: #666;
+        }
+
+        .product-row {
+            margin-bottom: 0.25rem;
+            border-bottom: 1px dotted #eee;
+            padding-bottom: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .signature-box {
+            margin-top: 1.5rem; /* Reduced */
+            padding: 1rem; /* Reduced */
+            border: 2px dashed #ccc;
+            border-radius: 0.5rem;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        .signature-line {
+            margin-top: 1.5rem;
+            border-bottom: 1px solid #000;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+            height: 1.5rem;
+        }
+
+        .footer {
+            margin-top: 1.5rem; /* Reduced */
+            font-size: 0.85rem;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 0.5rem;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                height: auto;
+                overflow: visible;
+            }
+            .app-header, .editor-pane {
+                display: none;
+            }
+            .main-content {
+                display: block;
+            }
+            .preview-pane {
+                padding: 0;
+                background: white;
+                overflow: visible;
+                display: block;
+            }
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                padding: 10mm; /* Further reduced for print */
+                margin: 0;
+            }
+            
+            /* Compact print typography and spacing */
+            .quote-header { margin-bottom: 0.5rem; }
+            .quote-logo { width: 100px; }
+            .quote-title { font-size: 1.5rem; }
+            .quote-subtitle { 
+                font-size: 1rem; 
+                margin-top: 1rem; 
+                margin-bottom: 0.25rem; 
+                padding-bottom: 0.1rem;
+            }
+            .quote-section { margin-bottom: 0.5rem; }
+            .quote-text { font-size: 0.85rem; line-height: 1.3; }
+            .product-row { padding-bottom: 0.1rem; margin-bottom: 0.1rem; }
+            .signature-box { margin-top: 1rem; padding: 0.5rem; height: auto; }
+            .signature-line { margin-top: 1rem; height: 1rem; }
+            .footer { margin-top: 1rem; padding-top: 0.25rem; }
+
+            @page {
+                margin: 0;
+                size: A4; /* Explicitly set size */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="app-title">מערכת הצעות מחיר - אנפי</div>
+        <button class="action-btn" onclick="window.print()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            הדפס / שמור כ-PDF
+        </button>
+    </header>
+
+    <div class="main-content">
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+            <div class="form-group">
+                <label class="form-label">תאריך</label>
+                <input type="date" id="input-date" class="form-input">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">שם הלקוח / חברה</label>
+                <input type="text" id="input-client" class="form-input" value="גדי, מחלקת רכש - גלרן">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">פתיח</label>
+                <textarea id="input-intro" class="form-textarea" rows="4">שלום רב,
+תודה על הפנייה ועל העניין במוצרינו. אנפי יבוא ושיווק בע״מ היא חברה משפחתית הפועלת משנת 1960 בשוק הפרזול לאלומיניום, עם התמחות עמוקה בעבודה מול יצרני אלומיניום, מתקינים ובתי מסחר. אנו מקפידים על זמינות מלאה, איכות גבוהה ושירות אמין לאורך כל הדרך.</textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">מוצרים</label>
+                <div id="products-container" class="products-list">
+                    <!-- Product items will be injected here -->
+                </div>
+                <button class="add-btn" onclick="addProduct()">+ הוסף מוצר</button>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">תנאים והערות</label>
+                <textarea id="input-terms" class="form-textarea" rows="4">• התמונות, המידות והנתונים הם להמחשה בלבד וייתכן שינוי לפי המלאי.
+• מחירי המשלוח יחושבו לפי כתובת הלקוח וגודל ההזמנה.
+• במקרה של חוסר במלאי, תוצע חלופה מתאימה או זמן אספקה מעודכן.
+• ההצעה תקפה ל־30 יום ממועד שליחתה.
+• אספקה תתבצע רק לאחר אישור הזמנה סופי ותיאום עם החברה.</textarea>
+            </div>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+            <div class="paper">
+                
+                <div class="quote-header">
+                    <h1 class="quote-title">הצעת מחיר</h1>
+                    <div class="quote-logo">
+                        <img src="logo.png" alt="לוגו אנפי" onerror="this.style.display='none'; this.parentElement.innerText='לוגו אנפי'">
+                    </div>
+                </div>
+
+                <div class="quote-section">
+                    <strong>תאריך:</strong> <span id="preview-date"></span><br><br>
+                    <strong>לכבוד:</strong><br>
+                    <span id="preview-client"></span><br><br>
+                    <div id="preview-intro" class="quote-text"></div>
+                </div>
+
+                <h2 class="quote-subtitle">פרטי ההצעה</h2>
+                <div class="quote-section quote-text">
+                    • שם העסק: אנפי יבוא ושיווק בע״מ<br>
+                    • תחום פעילות: פרזול לאלומיניום - ידיות, גלגלים, רשתות, חיבורים, אביזרי תריס, פרופילים ועוד<br>
+                    • זמן אספקה: בהתאם למלאי - משלוח בתיאום מראש<br>
+                    • תנאי תשלום: בכפוף להסכם / תשלום בתחילת עבודה<br>
+                    • תקופת תוקף ההצעה: 30 יום ממועד שליחתה<br>
+                </div>
+
+                <h2 class="quote-subtitle">מוצרים ומחירים</h2>
+                <div id="preview-products" class="quote-section quote-text">
+                    <!-- Products preview -->
+                </div>
+                <div style="font-style: italic; font-size: 0.9em; margin-top: 10px;">*כל המחירים לפני מע״מ.*</div>
+
+                <h2 class="quote-subtitle">יתרונות העבודה איתנו</h2>
+                <div class="quote-section quote-text">
+                    <ul class="quote-list">
+                        <li>ניסיון מקצועי מצטבר מאז 1960.</li>
+                        <li>מגוון רחב של פרזול לאלומיניום במלאי זמין.</li>
+                        <li>שירות אישי ומהיר לבתי עסק.</li>
+                        <li>אפשרות להנחה בכמויות.</li>
+                    </ul>
+                </div>
+
+                <h2 class="quote-subtitle">תנאים כלליים</h2>
+                <div id="preview-terms" class="quote-section quote-text" style="white-space: pre-wrap;"></div>
+
+                <h2 class="quote-subtitle">חתימת הלקוח</h2>
+                <div class="signature-box">
+                    <div>חתימת הלקוח: ____________________________________</div>
+                    <div style="margin-top: 20px;">תאריך: ____________________________________</div>
+                </div>
+
+                <div class="footer">
+                    בברכה,<br>
+                    <strong>שחר כהן</strong><br>
+                    אנפי יבוא ושיווק בע״מ<br>
+                    טלפון: 052-8366744<br>
+                    דוא״ל: anfialuminium@gmail.com
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            date: new Date().toISOString().split('T')[0],
+            client: "גדי, מחלקת רכש - גלרן",
+            intro: `שלום רב,
+תודה על הפנייה ועל העניין במוצרינו. אנפי יבוא ושיווק בע״מ היא חברה משפחתית הפועלת משנת 1960 בשוק הפרזול לאלומיניום, עם התמחות עמוקה בעבודה מול יצרני אלומיניום, מתקינים ובתי מסחר. אנו מקפידים על זמינות מלאה, איכות גבוהה ושירות אמין לאורך כל הדרך.`,
+            products: [
+                { name: "", price: "" },
+                { name: "", price: "" },
+                { name: "", price: "" }
+            ],
+            terms: `• התמונות, המידות והנתונים הם להמחשה בלבד וייתכן שינוי לפי המלאי.
+• מחירי המשלוח יחושבו לפי כתובת הלקוח וגודל ההזמנה.
+• במקרה של חוסר במלאי, תוצע חלופה מתאימה או זמן אספקה מעודכן.
+• ההצעה תקפה ל־30 יום ממועד שליחתה.
+• אספקה תתבצע רק לאחר אישור הזמנה סופי ותיאום עם החברה.`
+        };
+
+        // Elements
+        const els = {
+            date: document.getElementById('input-date'),
+            client: document.getElementById('input-client'),
+            intro: document.getElementById('input-intro'),
+            terms: document.getElementById('input-terms'),
+            productsContainer: document.getElementById('products-container'),
+            
+            pDate: document.getElementById('preview-date'),
+            pClient: document.getElementById('preview-client'),
+            pIntro: document.getElementById('preview-intro'),
+            pProducts: document.getElementById('preview-products'),
+            pTerms: document.getElementById('preview-terms')
+        };
+
+        // Init
+        function init() {
+            // Set initial values to inputs
+            els.date.value = state.date;
+            els.client.value = state.client;
+            els.intro.value = state.intro;
+            els.terms.value = state.terms;
+
+            renderProductsInputs();
+            updatePreview();
+
+            // Listeners
+            els.date.addEventListener('input', (e) => { state.date = e.target.value; updatePreview(); });
+            els.client.addEventListener('input', (e) => { state.client = e.target.value; updatePreview(); });
+            els.intro.addEventListener('input', (e) => { state.intro = e.target.value; updatePreview(); });
+            els.terms.addEventListener('input', (e) => { state.terms = e.target.value; updatePreview(); });
+        }
+
+        function renderProductsInputs() {
+            els.productsContainer.innerHTML = '';
+            state.products.forEach((prod, index) => {
+                const div = document.createElement('div');
+                div.className = 'product-item';
+                div.innerHTML = `
+                    <button class="remove-product" onclick="removeProduct(${index})">×</button>
+                    <div class="form-group">
+                        <label class="form-label">תיאור מוצר</label>
+                        <input type="text" class="form-input" value="${prod.name}" oninput="updateProduct(${index}, 'name', this.value)" placeholder="לדוגמה: ידית אלומיניום">
+                    </div>
+                    <div class="form-group" style="margin-top: 0.5rem;">
+                        <label class="form-label">מחיר ליחידה (ש״ח)</label>
+                        <input type="text" class="form-input" value="${prod.price}" oninput="updateProduct(${index}, 'price', this.value)" placeholder="לדוגמה: 50">
+                    </div>
+                `;
+                els.productsContainer.appendChild(div);
+            });
+        }
+
+        function updateProduct(index, field, value) {
+            state.products[index][field] = value;
+            updatePreview();
+        }
+
+        function addProduct() {
+            state.products.push({ name: "", price: "" });
+            renderProductsInputs();
+            updatePreview();
+        }
+
+        window.removeProduct = function(index) {
+            state.products.splice(index, 1);
+            renderProductsInputs();
+            updatePreview();
+        }
+
+        window.addProduct = addProduct;
+        window.updateProduct = updateProduct;
+
+        function updatePreview() {
+            // Format date
+            const d = new Date(state.date);
+            els.pDate.textContent = isNaN(d.getTime()) ? state.date : d.toLocaleDateString('he-IL');
+            
+            els.pClient.textContent = state.client;
+            els.pIntro.innerHTML = state.intro.replace(/\n/g, '<br>');
+            els.pTerms.textContent = state.terms;
+
+            // Render products preview
+            els.pProducts.innerHTML = state.products.map((prod, i) => {
+                const name = prod.name || '________';
+                const price = prod.price || '______';
+                return `
+                    <div class="product-row">
+                        <span>${i + 1}. ${name}</span>
+                        <span><strong>${price} ש״ח</strong> ליחידה</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        init();
+    </script>
+</body>
+</html>
