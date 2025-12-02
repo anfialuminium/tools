@@ -345,8 +345,16 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">שם הלקוח / חברה</label>
-                <input type="text" id="input-client" class="form-input" value="גדי, מחלקת רכש - גלרן">
+                <label class="form-label">שם איש הקשר</label>
+                <input type="text" id="input-contact-name" class="form-input" placeholder="שם איש הקשר">
+            </div>
+            <div class="form-group">
+                <label class="form-label">תפקיד איש הקשר</label>
+                <input type="text" id="input-contact-role" class="form-input" placeholder="תפקיד איש הקשר">
+            </div>
+            <div class="form-group">
+                <label class="form-label">שם החברה (הלקוח)</label>
+                <input type="text" id="input-company-name" class="form-input" placeholder="שם הלקוח">
             </div>
 
             <div class="form-group">
@@ -361,6 +369,11 @@
                     <!-- Product items will be injected here -->
                 </div>
                 <button class="add-btn" onclick="addProduct()">+ הוסף מוצר</button>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">תנאי תשלום</label>
+                <input type="text" id="input-payment-terms" class="form-input" placeholder="בכפוף להסכם / תשלום בתחילת עבודה">
             </div>
 
             <div class="form-group">
@@ -396,7 +409,7 @@
                     • שם העסק: אנפי יבוא ושיווק בע״מ<br>
                     • תחום פעילות: פרזול לאלומיניום - ידיות, גלגלים, רשתות, חיבורים, אביזרי תריס, פרופילים ועוד<br>
                     • זמן אספקה: בהתאם למלאי - משלוח בתיאום מראש<br>
-                    • תנאי תשלום: בכפוף להסכם / תשלום בתחילת עבודה<br>
+                    • תנאי תשלום: <span id="preview-payment-terms"></span><br>
                     • תקופת תוקף ההצעה: 30 יום ממועד שליחתה<br>
                 </div>
 
@@ -441,7 +454,9 @@
         // State
         const state = {
             date: new Date().toISOString().split('T')[0],
-            client: "גדי, מחלקת רכש - גלרן",
+            contactName: "שם איש הקשר",
+            contactRole: "תפקיד איש הקשר",
+            companyName: "שם הלקוח",
             intro: `שלום רב,
 תודה על הפנייה ועל העניין במוצרינו. אנפי יבוא ושיווק בע״מ היא חברה משפחתית הפועלת משנת 1960 בשוק הפרזול לאלומיניום, עם התמחות עמוקה בעבודה מול יצרני אלומיניום, מתקינים ובתי מסחר. אנו מקפידים על זמינות מלאה, איכות גבוהה ושירות אמין לאורך כל הדרך.`,
             products: [
@@ -449,6 +464,7 @@
                 { name: "", price: "" },
                 { name: "", price: "" }
             ],
+            paymentTerms: "בכפוף להסכם / תשלום בתחילת עבודה",
             terms: `• התמונות, המידות והנתונים הם להמחשה בלבד וייתכן שינוי לפי המלאי.
 • מחירי המשלוח יחושבו לפי כתובת הלקוח וגודל ההזמנה.
 • במקרה של חוסר במלאי, תוצע חלופה מתאימה או זמן אספקה מעודכן.
@@ -459,14 +475,18 @@
         // Elements
         const els = {
             date: document.getElementById('input-date'),
-            client: document.getElementById('input-client'),
+            contactName: document.getElementById('input-contact-name'),
+            contactRole: document.getElementById('input-contact-role'),
+            companyName: document.getElementById('input-company-name'),
             intro: document.getElementById('input-intro'),
+            paymentTerms: document.getElementById('input-payment-terms'),
             terms: document.getElementById('input-terms'),
             productsContainer: document.getElementById('products-container'),
             
             pDate: document.getElementById('preview-date'),
             pClient: document.getElementById('preview-client'),
             pIntro: document.getElementById('preview-intro'),
+            pPaymentTerms: document.getElementById('preview-payment-terms'),
             pProducts: document.getElementById('preview-products'),
             pTerms: document.getElementById('preview-terms')
         };
@@ -475,8 +495,11 @@
         function init() {
             // Set initial values to inputs
             els.date.value = state.date;
-            els.client.value = state.client;
+            els.contactName.value = state.contactName;
+            els.contactRole.value = state.contactRole;
+            els.companyName.value = state.companyName;
             els.intro.value = state.intro;
+            els.paymentTerms.value = state.paymentTerms;
             els.terms.value = state.terms;
 
             renderProductsInputs();
@@ -484,8 +507,11 @@
 
             // Listeners
             els.date.addEventListener('input', (e) => { state.date = e.target.value; updatePreview(); });
-            els.client.addEventListener('input', (e) => { state.client = e.target.value; updatePreview(); });
+            els.contactName.addEventListener('input', (e) => { state.contactName = e.target.value; updatePreview(); });
+            els.contactRole.addEventListener('input', (e) => { state.contactRole = e.target.value; updatePreview(); });
+            els.companyName.addEventListener('input', (e) => { state.companyName = e.target.value; updatePreview(); });
             els.intro.addEventListener('input', (e) => { state.intro = e.target.value; updatePreview(); });
+            els.paymentTerms.addEventListener('input', (e) => { state.paymentTerms = e.target.value; updatePreview(); });
             els.terms.addEventListener('input', (e) => { state.terms = e.target.value; updatePreview(); });
         }
 
@@ -534,8 +560,11 @@
             const d = new Date(state.date);
             els.pDate.textContent = isNaN(d.getTime()) ? state.date : d.toLocaleDateString('he-IL');
             
-            els.pClient.textContent = state.client;
+            const contactPart = [state.contactName, state.contactRole].filter(Boolean).join(', ');
+            const fullClientString = [contactPart, state.companyName].filter(Boolean).join(' - ');
+            els.pClient.textContent = fullClientString;
             els.pIntro.innerHTML = state.intro.replace(/\n/g, '<br>');
+            els.pPaymentTerms.textContent = state.paymentTerms;
             els.pTerms.textContent = state.terms;
 
             // Render products preview
