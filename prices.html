@@ -67,13 +67,6 @@
     button:hover {
       background: #125a9c;
     }
-
-    .note {
-      color: #777;
-      font-size: 14px;
-      margin-top: -10px;
-      margin-bottom: 10px;
-    }
   </style>
 </head>
 
@@ -104,10 +97,9 @@
     ];
 
     const perMeterCategories = ["מברשת", "רשת"];
-
     const container = document.getElementById("form-container");
 
-    // Create fields
+    // יצירת טופס דינמי
     products.forEach(name => {
       const div = document.createElement("div");
       div.className = "product-row";
@@ -116,18 +108,24 @@
 
       div.innerHTML = `
         <label>${name}</label>
-        <input type="number" step="0.01" placeholder="₪ ${isPerMeter ? 'למטר' : ''}"
-               data-name="${name}">
+        <input 
+          type="text"
+          inputmode="decimal"
+          pattern="[0-9]*"
+          placeholder="₪ ${isPerMeter ? 'למטר' : ''}"
+          data-name="${name}"
+        >
       `;
 
       container.appendChild(div);
     });
 
-    // Add submit button
+    // כפתור שליחה
     const btn = document.createElement("button");
     btn.textContent = "שמור מחירים";
     container.appendChild(btn);
 
+    // שליחת נתונים ל-Google Sheets
     btn.addEventListener("click", async () => {
       const inputs = document.querySelectorAll("input[data-name]");
       const data = [];
@@ -139,7 +137,7 @@
         });
       });
 
-      const url = "https://script.google.com/macros/s/AKfycbxcoze7optNR3HylGZezLJCgAVWYzjr-8GxlgUFqyyMD0tNFH0Io2RhXWUi9gCWl4o/exec"; // החלף ל-URL של ה-Web App
+      const url = "https://script.google.com/macros/s/AKfycbxcoze7optNR3HylGZezLJCgAVWYzjr-8GxlgUFqyyMD0tNFH0Io2RhXWUi9gCWl4o/exec"; // הכנס כאן את הקישור ל-Web App שלך
 
       const response = await fetch(url, {
         method: "POST",
